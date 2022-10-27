@@ -80,7 +80,7 @@ class ANN(torch.nn.Module):
 
 
 # define how to train the model
-def fit(net, X, y, n_epochs=100):
+def fit(net, X, y, n_epochs=100, learning_rate=0.01):
     """
     :param net: the architecture we built before, e.g.ANN(torch.nn.Module)
     :param X: X_train, n x d tensor
@@ -91,15 +91,17 @@ def fit(net, X, y, n_epochs=100):
     list_of_losses = []
     # loss = torch.nn.CrossEntropyLoss() # this is for multi-class classification
     loss = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(net.parameters())  # ,lr=)
+    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # tune the learning rate, optimize the result
 
     for epoch in tqdm(range(n_epochs)):
         y_pred = net.forward(X)
         l = loss(y_pred, y)  # should put y_pred in first pram
         list_of_losses.append(l.item())
+
+        optimizer.zero_grad()  # set the gradients to zero before every update
         l.backward()
         optimizer.step()  # function as updating parameters, param -= learning_rate * param.grad
-        optimizer.zero_grad()
+
         if epoch % 10 == 0:
             # print(next(net.parameters()))
             # print(next(net.parameters()))
@@ -122,8 +124,10 @@ def predict(net, X):
 if __name__ == "__main__":
     # print(np.asarray(y_train).shape)
     model = ANN()
+    # print(next(model.parameters())) # check the architecture is successfully initialized
+
     losses = fit(net=model, X=X_train, y=y_train, n_epochs=100)
-    y_pred = predict(net=model,X = X_test).detach().numpy()
+    y_pred = predict(net=model, X=X_test).detach().numpy()
     print(y_pred.sum())
     cm = confusion_matrix(y_test, y_pred)
     print("Confusion Matrix: {}".format(cm))
