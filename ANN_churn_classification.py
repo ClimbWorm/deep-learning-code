@@ -123,13 +123,14 @@ def predict(net, X):
 
 if __name__ == "__main__":
     # print(np.asarray(y_train).shape)
-    model = ANN()
+    model = ANN().to(device)
     # print(next(model.parameters())) # check the architecture is successfully initialized
-
-    losses = fit(net=model, X=X_train, y=y_train, n_epochs=100)
-    y_pred = predict(net=model, X=X_test).detach().numpy()
-    print(y_pred.sum())
-    cm = confusion_matrix(y_test, y_pred)
-    print("Confusion Matrix: {}".format(cm))
-    acc = accuracy_score(y_test, y_pred)
-    print("Accuracy: {}".format(acc))
+    print(model)
+    #
+    # losses = fit(net=model, X=X_train, y=y_train, n_epochs=100)
+    # y_pred = predict(net=model, X=X_test).detach().numpy()
+    # print(y_pred.sum())
+    # cm = confusion_matrix(y_test, y_pred)
+    # print("Confusion Matrix: {}".format(cm))
+    # acc = accuracy_score(y_test, y_pred)
+    # print("Accuracy: {}".format(acc))

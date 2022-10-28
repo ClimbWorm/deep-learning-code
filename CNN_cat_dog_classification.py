@@ -3,7 +3,6 @@ import numpy as np
 import sys
 import sklearn
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose
 from torchvision import transforms, datasets
@@ -22,8 +21,10 @@ model training
 model evaluation
 prediction
 """
+# https://www.udemy.com/course/deeplearning/learn/lecture/6905308#questions/5254500
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # create train_trasform and test_transform for data augmentation
 # the purpose of data augmentation: prevent overfitting
@@ -51,45 +52,32 @@ test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=32, shuffle=T
 
 
 # build CNN model
-class CNN(torch.nn.Module):
-    def __int__(self):
-        super(CNN, self).__init__()
-        #https://blog.csdn.net/qq_38334521/article/details/106160029
-        # self.conv = nn.Conv2d(in_channels=3, out_channels=3, kernel_size=3, stride=2)
-        # self.relu = nn.ReLU()
-        # self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        # self.fc1 = nn.Linear(in_features=3, out_features=3)
-        # self.fc2 = nn.Linear(in_features=3, out_features=1)
-        # self.sigmoid = nn.Sigmoid()
-
-        # self.layer_module=nn.ModuleList()
+class ConvNet(torch.nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
         self.conv = torch.nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=3, kernel_size=3, stride=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            # floor((shape + 2p - f)/2+1)
+            torch.nn.Conv2d(in_channels=3, out_channels=64, kernel_size=(2, 2), stride=2),  # [32,64,32,32]
+            torch.nn.ReLU(),  # [32,64,32,32]
+            torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2),  # [32,64,16,16]
+
+            torch.nn.Conv2d(64, 16, kernel_size=(3, 3), padding=1),  # [32,16,16,16]
+            torch.nn.ReLU(),  # [32,16,16,16]
+            torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2),  # [32,16,8,8]
         )
-        # self.layer_module.append(self.cov)
-        #
-        # self.fc = torch.nn.Sequential(
-        #     nn.Linear(in_features=3, out_features=3),  # fully connected layer
-        #     nn.ReLU()
-        # )
-        # self.layer_module.append(self.fc)
-        #
-        # self.out = torch.nn.Sequential(
-        #     nn.Linear(in_features=3, out_features=1),
-        #     nn.Sigmoid()
-        # )
-        # self.layer_module.append(self.out)
+        self.fc = torch.nn.Sequential(
+            torch.nn.Linear(16 * 8 * 8, 360),
+            torch.nn.ReLU(),
+            torch.nn.Linear(360, 20),
+            torch.nn.ReLU(),
+            torch.nn.Linear(20, 1),  # number of output neural = 1 because it is a binary classification
+            torch.nn.Sigmoid(),  # Note in multiclass classification, softmax already included in the cross entropy loss
+        )
 
     def forward(self, x):
-        print(x.shape)
         out = self.conv(x)
-        # out = self.layer_module[0](x)
-        # out = self.layer_module[0](out)
-        out = out.view(-1, 3)  # reshape
-        # out = self.layer_module[1](out)
-        # out = self.layer_module[2](out)
+        out = out.view(-1, 16 * 8 * 8)  # flatten, the first argument here is batch size
+        out = self.fc(out)
         return out
 
 
@@ -106,20 +94,23 @@ def fit(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
     """
     # list_of_losses = []
     # loss = torch.nn.CrossEntropyLoss() # this is for multi-class classification
+    # print(net)
     loss = torch.nn.BCELoss()
     print(net.parameters())
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # tune the learning rate, optimize the result
     iter = 0
     for _ in tqdm(range(n_epochs)):
         for i, (images, labels) in enumerate(tr_loader):
+            images = images.to(device).float()
+            labels = labels.to(device).float()
             # Load images
-            images = images.requires_grad_()
+            # images = images.requires_grad_()
 
             # Forward pass to get output/logits
             y_pred = net(images)  # forward
 
             # Calculate Loss: softmax --> cross entropy loss
-            l = loss(y_pred, labels)
+            l = loss(y_pred.squeeze(1), labels)
             # list_of_losses.append(l.item())
 
             # Clear gradients w.r.t. parameters
@@ -130,7 +121,7 @@ def fit(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
             optimizer.step()
 
             iter += 1
-
+            # net.eval()
             if iter % 10 == 0:
                 # Calculate Accuracy
                 correct = 0
@@ -145,7 +136,7 @@ def fit(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
 
                     # Get predictions from the maximum value
                     # _, predicted = torch.max(outputs.data, 1) # this is for multi-class
-                    predicted = outputs > 0.5
+                    predicted = outputs.squeeze(1) > 0.5
 
                     # Total number of labels
                     total += label.size(0)
@@ -161,30 +152,19 @@ def fit(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
     return None  # list_of_losses
 
 
-# def predict(net, test_image):
-#     """
-#     :param net: the trained model
-#     :param test_image: test set
-#     :return: the predicted value
-#     """
-#     res = net(X) > 0.5  # set the threshold as 0.5 in binary classification
-#     return res
-
-# model.to(device)
 if __name__ == "__main__":
     # Run this to test data loader
     # images, labels = next(iter(train_loader))
     # pic = imshow(images[0], normalize=False)
+
+    # check input image size
+    # for image, label in train_loader:
+    #     print(image.shape)  # torch.Size([32, 3, 64, 64])
+    #     break
+
     # print(dataset_train.class_to_idx) #{'cats': 0, 'dogs': 1}
-    model = CNN()
-    print(next(model.parameters()))
-    # model = model.to(device)
 
-    # fit(net=model, tr_loader=train_loader, te_loader=test_loader, n_epochs=100)
+    model = ConvNet().to(device)
+    # train
+    fit(net=model, tr_loader=train_loader, te_loader=test_loader, n_epochs=100)
 
-    # y_pred = predict(net=model, X=X_test).detach().numpy()
-    # print(y_pred.sum())
-    # cm = confusion_matrix(y_test, y_pred)
-    # print("Confusion Matrix: {}".format(cm))
-    # acc = accuracy_score(y_test, y_pred)
-    # print("Accuracy: {}".format(acc))
