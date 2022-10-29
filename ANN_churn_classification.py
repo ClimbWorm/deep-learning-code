@@ -75,12 +75,12 @@ class ANN(torch.nn.Module):
         )  # torch.nn.Linear same as tf.keras.layers.Dense(): fully connected dense layer
 
     def forward(self, x):  # model()会自动调用forward，不需要model.forward()
-        out = self.net(x).flatten()  # x: X_train
+        out = self.net(x).squeeze(1)  # x: X_train
         return out
 
 
 # define how to train the model
-def fit(net, X, y, n_epochs=100, learning_rate=0.01):
+def train(net, X, y, n_epochs=100, learning_rate=0.01):
     """
     :param net: the architecture we built before, e.g.ANN(torch.nn.Module)
     :param X: X_train, n x d tensor
@@ -125,12 +125,11 @@ if __name__ == "__main__":
     # print(np.asarray(y_train).shape)
     model = ANN().to(device)
     # print(next(model.parameters())) # check the architecture is successfully initialized
-    print(model)
     #
-    # losses = fit(net=model, X=X_train, y=y_train, n_epochs=100)
-    # y_pred = predict(net=model, X=X_test).detach().numpy()
-    # print(y_pred.sum())
-    # cm = confusion_matrix(y_test, y_pred)
-    # print("Confusion Matrix: {}".format(cm))
-    # acc = accuracy_score(y_test, y_pred)
-    # print("Accuracy: {}".format(acc))
+    losses = train(net=model, X=X_train, y=y_train, n_epochs=100)
+    y_pred = predict(net=model, X=X_test).detach().numpy()
+    print(y_pred.sum())
+    cm = confusion_matrix(y_test, y_pred)
+    print("Confusion Matrix: {}".format(cm))
+    acc = accuracy_score(y_test, y_pred)
+    print("Accuracy: {}".format(acc))

@@ -83,7 +83,7 @@ class ConvNet(torch.nn.Module):
 
 # model training
 # define how to train the model
-def fit(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
+def train(net, tr_loader, te_loader, n_epochs=100, learning_rate=0.01):
     """
     :param net: the architecture we built before, e.g.CNN(torch.nn.Module)
     :param tr_loader: train_loader we created before using dataloader
@@ -166,5 +166,5 @@ if __name__ == "__main__":
 
     model = ConvNet().to(device)
     # train
-    fit(net=model, tr_loader=train_loader, te_loader=test_loader, n_epochs=100)
+    train(net=model, tr_loader=train_loader, te_loader=test_loader, n_epochs=100)
 
