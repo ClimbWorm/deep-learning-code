@@ -11,4 +11,4 @@ Good learning resources:
     - Discriminate dog and cat based on Convolutional Neural Network (Classification problem)[supervised learning]
     - Stock price prediction based on LSTM (RNN)(Regression problem)[supervised learning] Note: the result is not good now, need further parameter tune
     - Fraud detection based on self organizing map (SOM)(Clustering problem)[Unsupervised learning]
-    - Recommendation system based on Boltzmann Machine using MCMC techniques (Binary Classification problem)[supervised learning]
+    - Recommendation system based on Boltzmann Machine using MCMC techniques (Binary Classification problem)[Unsupervised learning]
